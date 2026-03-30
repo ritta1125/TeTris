@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Math Tetris - VS & Singleplayer</title>
+<meta charset="UTF-8">
+<style>
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Courier New', monospace;
+}
+
+body {
+  background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.game-container {
+  display: flex;
+  gap: 30px;
+  align-items: flex-start;
+}
+
+.player-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.player-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.player1 { color: #00FFFF; }
+.player2 { color: #FF69B4; }
+
+.game-board {
+  display: flex;
+  gap: 15px;
+}
+
+canvas {
+  border: 4px solid #666;
+  background: #000;
+}
+
+.info-panel {
+  background: #1a1a1a;
+  border: 4px solid #666;
+  padding: 15px;
+  width: 140px;
+  font-size: 12px;
+}
+
+.center-panel {
+  background: #1a1a1a;
+  border: 4px solid #FFD700;
+  padding: 20px;
+  text-align: center;
+  min-width: 200px;
+}
+
+.game-title {
+  font-size: 28px;
+  color: #FFD700;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+.mode-selector {
+  margin-bottom: 20px;
+}
+
+.mode-btn {
+  background: #333;
+  color: white;
+  border: 2px solid #666;
+  padding: 8px 16px;
+  margin: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.mode-btn.active {
+  background: #FFD700;
+  color: #000;
+  border-color: #FFD700;
+}
+
+.mode-btn:hover {
+  background: #555;
+}
+
+.mode-btn.active:hover {
+  background: #FFC700;
+}
+
+.vs-mode {
+  font-size: 18px;
+  color: #FF4444;
+  margin-bottom: 15px;
+}
+
+.timer {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.start-btn {
+  background: #FFD700;
+  color: #000;
+  border: none;
+  padding: 12px 24px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.start-btn:hover {
+  background: #FFC700;
+}
+
+.controls {
+  font-size: 10px;
+  color: #AAA;
+  margin-top: 10px;
+}
+
+.score-section {
+  margin-bottom: 15px;
+}
+
+.score-label {
+  color: #FFD700;
+  font-weight: bold;
+}
+
+.next-piece {
+  border: 2px solid #444;
+  background: #000;
+  padding: 5px;
+  margin: 5px 0;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.winner-display {
+  font-size: 20px;
+  color: #00FF00;
+  margin-bottom: 15px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+.controller-status {
+  font-size: 11px;
+  color: #00FF00;
+  margin-bottom: 15px;
+}
+
+.bonus-display {
+  position: absolute;
+  font-size: 16px;
+  font-weight: bold;
+  color: #FFD700;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+  pointer-events: none;
+  z-index: 1000;
+  animation: bonusFloat 2s ease-out forwards;
+}
+
+@keyframes bonusFloat {
+  0% { opacity: 1; transform: translateY(0px); }
+  100% { opacity: 0; transform: translateY(-50px); }
+}
+
+.combo-meter {
+  background: #333;
+  border: 2px solid #666;
+  padding: 5px;
+  margin: 5px 0;
+  font-size: 10px;
+}
+
+.combo-bar {
+  height: 8px;
+  background: linear-gradient(90deg, #00FF00, #FFFF00, #FF0000);
+  transition: width 0.3s ease;
+}
+
+.line-clear-effect {
+  background: rgba(255, 255, 255, 0.8);
+  animation: lineClearFlash 0.5s ease-out;
+}
+
+@keyframes lineClearFlash {
+  0% { background: rgba(255, 255, 255, 0.8); }
+  50% { background: rgba(255, 215, 0, 0.8); }
+  100% { background: rgba(255, 255, 255, 0); }
+}
+
+.hidden {
+  display: none !important;
+}
+
+.game-over {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.9);
+  border: 4px solid #FF4444;
+  border-radius: 15px;
+  padding: 30px;
+  text-align: center;
+  font-size: 24px;
+  color: #FF4444;
+  display: none;
+  z-index: 2000;
+}
+
+.high-score {
+  color: #00FF00;
+  font-size: 14px;
+  margin-top: 5px;
+}
+</style>
+</head>
+<body>
+<div class="game-container">
+  <!-- Player 1 -->
+  <div class="player-section" id="player1Section">
+    <div class="player-title player1">PLAYER 1</div>
+    <div class="game-board">
+      <canvas width="320" height="640" id="game1"></canvas>
+      <div class="info-panel">
+        <div class="score-section">
+          <div class="score-label">NEXT</div>
+          <div class="next-piece" id="next1"></div>
+        </div>
+        <div class="score-section">
+          <div class="score-label">SCORE</div>
+          <div id="score1">0</div>
+          <div class="high-score" id="highScore1">Best: 0</div>
+        </div>
+        <div class="score-section">
+          <div class="score-label">LINES</div>
+          <div id="lines1">0</div>
+        </div>
+        <div class="score-section">
+          <div class="score-label">LEVEL</div>
+          <div id="level1">1</div>
+        </div>
+        <div class="score-section">
+          <div class="score-label">COMBO</div>
+          <div id="combo1">0x</div>
+          <div class="combo-meter">
+            <div class="combo-bar" id="comboBar1" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="score-section">
+          <div class="score-label">π BONUS</div>
+          <div id="piBonus1">0</div>
+        </div>
+        <div class="controls">
+          <div class="score-label">CONTROLS:</div>
+          <div id="controls1">A/D Move<br>S Soft Drop<br>W Rotate<br>Q Instant Drop</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Center Panel -->
+  <div class="center-panel">
+    <div class="game-title">MATH TETRIS</div>
+    
+    <div class="mode-selector">
+      <div class="score-label">GAME MODE:</div>
+      <button class="mode-btn active" id="singleBtn" onclick="setMode('single')">SINGLEPLAYER</button>
+      <button class="mode-btn" id="vsBtn" onclick="setMode('vs')">VS MODE</button>
+    </div>
+    
+    <div class="vs-mode" id="modeDisplay">SINGLEPLAYER</div>
+    <div class="timer" id="timerSection">TIME: <span id="timer">120</span>s</div>
+    
+    <div class="controller-status">
+      <div class="score-label">CONTROLLERS:</div>
+      <div id="controller-count">0 connected</div>
+      <div id="controller-list"></div>
+    </div>
+    
+    <div class="winner-display" id="winner" style="display: none;"></div>
+    
+    <button class="start-btn" id="startBtn" onclick="startGame()">START GAME</button>
+    <div style="font-size: 12px; color: #AAA;">or press R</div>
+    
+    <div style="font-size: 11px; color: #AAA; margin-top: 15px;">
+      <div class="score-label">SCORING SYSTEM:</div>
+      <div>π = 314 pts • √ = 100 pts</div>
+      <div>^ = 50 pts • + = 25 pts</div>
+      <div>= − = 10 pts each</div>
+      <div>EQUATION BONUS: +1000!</div>
+      <div>COMBO MULTIPLIER: 2x-10x</div>
+    </div>
+  </div>
+
+  <!-- Player 2 -->
+  <div class="player-section" id="player2Section">
+    <div class="player-title player2">PLAYER 2</div>
+    <div class="game-board">
+      <canvas width="320" height="640" id="game2"></canvas>
+      <div class="info-panel">
+        <div class="score-section">
+          <div class="score-label">NEXT</div>
+          <div class="next-piece" id="next2"></div>
+        </div>
+        <div class="score-section">
+          <div class="score-label">SCORE</div>
+          <div id="score2">0</div>
+          <div class="high-score" id="highScore2">Best: 0</div>
+        </div>
+        <div class="score-section">
+          <div class="score-label">LINES</div>
+          <div id="lines2">0</div>
+        </div>
+        <div class="score-section">
+          <div class="score-label">LEVEL</div>
+          <div id="level2">1</div>
+        </div>
+        <div class="score-section">
+          <div class="score-label">COMBO</div>
+          <div id="combo2">0x</div>
+          <div class="combo-meter">
+            <div class="combo-bar" id="comboBar2" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="score-section">
+          <div class="score-label">π BONUS</div>
+          <div id="piBonus2">0</div>
+        </div>
+        <div class="controls">
+          <div class="score-label">CONTROLS:</div>
+          <div id="controls2">← → Move<br>↓ Soft Drop<br>↑ Rotate<br>SPACE Drop</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="game-over" id="gameOver">
+  <div style="font-size: 36px; margin-bottom: 20px;">GAME OVER!</div>
+  <div id="finalScore" style="font-size: 24px; margin-bottom: 10px;"></div>
+  <div id="finalStats" style="font-size: 16px; margin-bottom: 20px;"></div>
+  <button class="start-btn" onclick="startGame()">PLAY AGAIN</button>
+</div>
+
+<script>
+// Math symbol pieces with EPIC scoring values!
+const mathPieces = {
+  'MINUS': {
+    rotations: [
+      [[1, 1, 1]],  // horizontal
+      [[1], [1], [1]]  // vertical
+    ],
+    color: '#00FFFF',
+    symbol: '−',
+    basePoints: 10
+  },
+  'PLUS': {
+    rotations: [
+      [
+        [0, 1, 0],
+        [1, 1, 1],
+        [0, 1, 0]
+      ]  // Plus is the same in all rotations
+    ],
+    color: '#FFFF00',
+    symbol: '+',
+    basePoints: 25
+  },
+  'EQUALS': {
+    rotations: [
+      [
+        [1, 1],
+        [0, 0],
+        [1, 1]
+      ],  // horizontal
+      [
+        [1, 0, 1],
+        [1, 0, 1]
+      ]  // vertical
+    ],
+    color: '#0080FF',
+    symbol: '=',
+    basePoints: 10
+  },
+  'POWER': {
+    rotations: [
+      [
+        [0, 1, 0],
+        [1, 0, 1]
+      ],  // up arrow
+      [
+        [1, 0],
+        [0, 1],
+        [1, 0]
+      ],  // right arrow
+      [
+        [1, 0, 1],
+        [0, 1, 0]
+      ],  // down arrow
+      [
+        [0, 1],
+        [1, 0],
+        [0, 1]
+      ]   // left arrow
+    ],
+    color: '#80FF00',
+    symbol: '^',
+    basePoints: 50
+  },
+  'SQRT': {
+    rotations: [
+      [
+        [1, 1, 1],
+        [1, 0, 0]
+      ],  // normal
+      [
+        [1, 1],
+        [0, 1],
+        [0, 1]
+      ],  // 90 degrees
+      [
+        [0, 0, 1],
+        [1, 1, 1]
+      ],  // 180 degrees
+      [
+        [1, 0],
+        [1, 0],
+        [1, 1]
+      ]   // 270 degrees
+    ],
+    color: '#FF8000',
+    symbol: '√',
+    basePoints: 100
+  },
+  'PI': {
+    rotations: [
+      [
+        [1, 1, 1],
+        [1, 0, 1]
+      ],  // normal
+      [
+        [1, 1],
+        [0, 1],
+        [1, 1]
+      ],  // 90 degrees
+      [
+        [1, 0, 1],
+        [1, 1, 1]
+      ],  // 180 degrees
+      [
+        [1, 1],
+        [1, 0],
+        [1, 1]
+      ]   // 270 degrees
+    ],
+    color: '#FF0080',
+    symbol: 'π',
+    basePoints: 314  // π × 100!
+  }
+};
+
+// Game state
+let gameRunning = false;
+let gameMode = 'single'; // 'single' or 'vs'
+let timeLeft = 120;
+let winner = null;
+let gameTimer = null;
+let gameStartTime = 0;
+let gameTime = 0;
+
+// High scores
+let highScores = {
+  single: localStorage.getItem('mathTetrisHighScoreSingle') || 0,
+  vs1: localStorage.getItem('mathTetrisHighScoreVS1') || 0,
+  vs2: localStorage.getItem('mathTetrisHighScoreVS2') || 0
+};
+
+// Player states with EPIC scoring tracking
+const players = {
+  1: {
+    canvas: document.getElementById('game1'),
+    context: null,
+    playfield: [],
+    tetromino: null,
+    nextPiece: null,
+    sequence: [],
+    score: 0,
+    lines: 0,
+    level: 1,
+    count: 0,
+    rAF: null,
+    combo: 0,
+    piBonus: 0,
+    lastClearTime: 0,
+    clearingLines: false,
+    gameOver: false
+  },
+  2: {
+    canvas: document.getElementById('game2'),
+    context: null,
+    playfield: [],
+    tetromino: null,
+    nextPiece: null,
+    sequence: [],
+    score: 0,
+    lines: 0,
+    level: 1,
+    count: 0,
+    rAF: null,
+    combo: 0,
+    piBonus: 0,
+    lastClearTime: 0,
+    clearingLines: false,
+    gameOver: false
+  }
+};
+
+// Controller state
+let controllers = [];
+let buttonStates = {};
+
+// Initialize players
+Object.keys(players).forEach(playerNum => {
+  const player = players[playerNum];
+  player.context = player.canvas.getContext('2d');
+  
+  // Initialize playfield - FIXED: Proper 2D array initialization
+  player.playfield = [];
+  for (let row = -2; row < 20; row++) {
+    player.playfield[row] = [];
+    for (let col = 0; col < 10; col++) {
+      player.playfield[row][col] = null; // Use null instead of 0 for empty cells
+    }
+  }
+});
+
+// Update high score displays
+function updateHighScoreDisplays() {
+  if (gameMode === 'single') {
+    document.getElementById('highScore1').textContent = `Best: ${parseInt(highScores.single).toLocaleString()}`;
+    document.getElementById('highScore2').textContent = '';
+  } else {
+    document.getElementById('highScore1').textContent = `Best: ${parseInt(highScores.vs1).toLocaleString()}`;
+    document.getElementById('highScore2').textContent = `Best: ${parseInt(highScores.vs2).toLocaleString()}`;
+  }
+}
+
+// Mode switching
+function setMode(mode) {
+  if (gameRunning) return; // Can't change mode during game
+  
+  gameMode = mode;
+  
+  // Update button states
+  document.getElementById('singleBtn').classList.toggle('active', mode === 'single');
+  document.getElementById('vsBtn').classList.toggle('active', mode === 'vs');
+  
+  // Update display
+  if (mode === 'single') {
+    document.getElementById('modeDisplay').textContent = 'SINGLEPLAYER';
+    document.getElementById('player2Section').classList.add('hidden');
+    // Timer now always visible for both modes
+    document.getElementById('player1Section').querySelector('.player-title').textContent = 'MATH TETRIS';
+  } else {
+    document.getElementById('modeDisplay').textContent = 'VS MODE';
+    document.getElementById('player2Section').classList.remove('hidden');
+    document.getElementById('timerSection').classList.remove('hidden');
+    document.getElementById('player1Section').querySelector('.player-title').textContent = 'PLAYER 1';
+  }
+  
+  updateHighScoreDisplays();
+}
+
+// Initialize mode
+setMode('single');
+
+// Utility functions
+function getRandomInt(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function generateSequence(player) {
+  const sequence = Object.keys(mathPieces);
+  while (sequence.length) {
+    const rand = getRandomInt(0, sequence.length - 1);
+    const name = sequence.splice(rand, 1)[0];
+    player.sequence.push(name);
+  }
+}
+
+function getNextTetromino(player) {
+  if (player.sequence.length === 0) {
+    generateSequence(player);
+  }
+
+  const name = player.sequence.pop();
+  const pieceData = mathPieces[name];
+  const matrix = pieceData.rotations[0]; // Start with first rotation
+
+  const col = Math.floor(player.playfield[0].length / 2) - Math.ceil(matrix[0].length / 2);
+  const row = -2;
+
+  return {
+    name: name,
+    matrix: matrix,
+    row: row,
+    col: col,
+    color: pieceData.color,
+    symbol: pieceData.symbol,
+    rotation: 0,  // Track current rotation index
+    basePoints: pieceData.basePoints
+  };
+}
+
+// FIXED: Better collision detection
+function isValidMove(player, matrix, cellRow, cellCol) {
+  for (let row = 0; row < matrix.length; row++) {
+    for (let col = 0; col < matrix[row].length; col++) {
+      if (matrix[row][col]) {
+        const newRow = cellRow + row;
+        const newCol = cellCol + col;
+        
+        // Check boundaries
+        if (newCol < 0 || newCol >= 10 || newRow >= 20) {
+          return false;
+        }
+        
+        // Check collision with existing pieces (only check visible area)
+        if (newRow >= 0 && player.playfield[newRow][newCol] !== null) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+// EPIC SCORING SYSTEM! 🔥
+function showBonusText(playerNum, text, points) {
+  const canvas = players[playerNum].canvas;
+  const rect = canvas.getBoundingClientRect();
+  
+  const bonusDiv = document.createElement('div');
+  bonusDiv.className = 'bonus-display';
+  bonusDiv.textContent = `${text} +${points.toLocaleString()}!`;
+  bonusDiv.style.left = (rect.left + rect.width/2 - 50) + 'px';
+  bonusDiv.style.top = (rect.top + rect.height/2) + 'px';
+  
+  document.body.appendChild(bonusDiv);
+  
+  setTimeout(() => {
+    if (document.body.contains(bonusDiv)) {
+      document.body.removeChild(bonusDiv);
+    }
+  }, 2000);
+}
+
+function checkForEquations(player, clearedRows) {
+  let equationBonus = 0;
+  
+  // Check if cleared lines contain equation-like patterns
+  for (let row of clearedRows) {
+    const symbols = [];
+    for (let col = 0; col < 10; col++) {
+      if (row[col] !== null) {
+        const pieceName = row[col];
+        symbols.push(mathPieces[pieceName].symbol);
+      }
+    }
+    
+    // Check for equation patterns
+    const symbolString = symbols.join('');
+    if (symbolString.includes('+') && symbolString.includes('=')) {
+      equationBonus += 1000;
+    }
+    if (symbolString.includes('−') && symbolString.includes('=')) {
+      equationBonus += 1000;
+    }
+    if (symbolString.includes('^') && symbolString.includes('=')) {
+      equationBonus += 2000; // Power equations are worth more!
+    }
+    if (symbolString.includes('√') && symbolString.includes('=')) {
+      equationBonus += 1500; // Square root equations
+    }
+  }
+  
+  return equationBonus;
+}
+
+function calculateScore(playerNum, linesCleared, clearedRows) {
+  const player = players[playerNum];
+  let totalScore = 0;
+  let bonusText = [];
+
+  // Base line clear bonus (classic Tetris)
+  const baseLineBonus = [0, 40, 100, 300, 1200][linesCleared] * player.level;
+  totalScore += baseLineBonus;
+
+  // Symbol-specific bonuses
+  let symbolBonus = 0;
+  let piCount = 0;
+  
+  for (let row of clearedRows) {
+    for (let col = 0; col < 10; col++) {
+      if (row[col] !== null) {
+        const pieceName = row[col];
+        const pieceData = mathPieces[pieceName];
+        symbolBonus += pieceData.basePoints;
+        
+        if (pieceName === 'PI') {
+          piCount++;
+        }
+      }
+    }
+  }
+
+  totalScore += symbolBonus;
+
+  // π SPECIAL BONUS! 🥧
+  if (piCount > 0) {
+    const piBonus = piCount * 314 * player.level;
+    player.piBonus += piBonus;
+    totalScore += piBonus;
+    bonusText.push(`π POWER: ${piBonus}`);
+  }
+
+  // Equation bonus
+  const equationBonus = checkForEquations(player, clearedRows);
+  if (equationBonus > 0) {
+    totalScore += equationBonus;
+    bonusText.push(`EQUATION: ${equationBonus}`);
+  }
+
+  // Combo system
+  const currentTime = Date.now();
+  if (currentTime - player.lastClearTime < 3000) { // 3 second window
+    player.combo++;
+  } else {
+    player.combo = 1;
+  }
+  player.lastClearTime = currentTime;
+
+  // Combo multiplier (2x to 10x)
+  const comboMultiplier = Math.min(player.combo, 10);
+  if (comboMultiplier > 1) {
+    const comboBonus = totalScore * (comboMultiplier - 1);
+    totalScore += comboBonus;
+    bonusText.push(`${comboMultiplier}x COMBO: ${comboBonus}`);
+  }
+
+  // √ SPECIAL: Square root the bonus for √ pieces (just for fun!)
+  const sqrtBonus = Math.floor(Math.sqrt(symbolBonus));
+  if (clearedRows.some(row => 
+    Array.from({length: 10}, (_, col) => row[col]).includes('SQRT')
+  )) {
+    totalScore += sqrtBonus;
+    bonusText.push(`√ BONUS: ${sqrtBonus}`);
+  }
+
+  // Show bonus text
+  if (bonusText.length > 0) {
+    showBonusText(playerNum, bonusText[0], totalScore - baseLineBonus);
+  }
+
+  return totalScore;
+}
+
+// FIXED: Better piece placement with game over detection
+function placeTetromino(playerNum) {
+  const player = players[playerNum];
+  
+  // Place the piece on the playfield
+  for (let row = 0; row < player.tetromino.matrix.length; row++) {
+    for (let col = 0; col < player.tetromino.matrix[row].length; col++) {
+      if (player.tetromino.matrix[row][col]) {
+        const boardRow = player.tetromino.row + row;
+        const boardCol = player.tetromino.col + col;
+        
+        // FIXED: Check for game over condition
+        if (boardRow < 0) {
+          player.gameOver = true;
+          if (gameMode === 'vs') {
+            // In VS mode, the other player wins
+            const winnerNum = playerNum === 1 ? 2 : 1;
+            endGame(winnerNum);
+          } else {
+            // In single player mode, show game over
+            endGame();
+          }
+          return;
+        }
+        
+        // Store the piece name, not just a 1
+        player.playfield[boardRow][boardCol] = player.tetromino.name;
+      }
+    }
+  }
+
+  // FIXED LINE CLEARING LOGIC! 🔧
+  let linesCleared = 0;
+  let clearedRows = [];
+  let rowsToRemove = [];
+  
+  // First pass: identify complete lines and store their data
+  for (let row = 19; row >= 0; row--) {
+    if (player.playfield[row].every(cell => cell !== null)) {
+      clearedRows.push([...player.playfield[row]]); // Store row data for scoring
+      rowsToRemove.push(row); // Mark row for removal
+      linesCleared++;
+    }
+  }
+
+  // Second pass: actually remove the lines (from bottom to top to avoid index issues)
+  for (let i = rowsToRemove.length - 1; i >= 0; i--) {
+    const rowToRemove = rowsToRemove[i];
+    
+    // Remove the completed line
+    player.playfield.splice(rowToRemove, 1);
+    
+    // Add a new empty line at the top
+    const newRow = [];
+    for (let col = 0; col < 10; col++) {
+      newRow[col] = null;
+    }
+    player.playfield.unshift(newRow);
+  }
+
+  // EPIC SCORING! 🔥
+  if (linesCleared > 0) {
+    const points = calculateScore(playerNum, linesCleared, clearedRows);
+    player.score += points;
+    player.lines += linesCleared;
+    player.level = Math.floor(player.lines / 10) + 1;
+    
+    // Check for high score
+    const highScoreKey = gameMode === 'single' ? 'single' : `vs${playerNum}`;
+    if (player.score > highScores[highScoreKey]) {
+      highScores[highScoreKey] = player.score;
+      localStorage.setItem(`mathTetrisHighScore${gameMode === 'single' ? 'Single' : `VS${playerNum}`}`, player.score);
+      updateHighScoreDisplays();
+    }
+    
+    // Update displays
+    document.getElementById(`score${playerNum}`).textContent = player.score.toLocaleString();
+    document.getElementById(`lines${playerNum}`).textContent = player.lines;
+    document.getElementById(`level${playerNum}`).textContent = player.level;
+    document.getElementById(`combo${playerNum}`).textContent = `${player.combo}x`;
+    document.getElementById(`piBonus${playerNum}`).textContent = player.piBonus.toLocaleString();
+    
+    // Update combo bar
+    const comboPercent = Math.min((player.combo / 10) * 100, 100);
+    document.getElementById(`comboBar${playerNum}`).style.width = `${comboPercent}%`;
+  } else {
+    // Reset combo if no lines cleared
+    player.combo = 0;
+    document.getElementById(`combo${playerNum}`).textContent = '0x';
+    document.getElementById(`comboBar${playerNum}`).style.width = '0%';
+  }
+
+  player.tetromino = player.nextPiece;
+  player.nextPiece = getNextTetromino(player);
+  updateNextPieceDisplay(playerNum);
+}
+
+function updateNextPieceDisplay(playerNum) {
+  const player = players[playerNum];
+  const nextDiv = document.getElementById(`next${playerNum}`);
+  
+  if (player.nextPiece) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 80;
+    canvas.height = 60;
+    const ctx = canvas.getContext('2d');
+    
+    ctx.fillStyle = player.nextPiece.color;
+    const matrix = player.nextPiece.matrix;
+    const cellSize = Math.min(60 / matrix.length, 80 / matrix[0].length);
+    
+    for (let row = 0; row < matrix.length; row++) {
+      for (let col = 0; col < matrix[row].length; col++) {
+        if (matrix[row][col]) {
+          ctx.fillRect(col * cellSize + 10, row * cellSize + 10, cellSize - 1, cellSize - 1);
+          
+          // Draw symbol
+          ctx.fillStyle = 'white';
+          ctx.font = `${cellSize * 0.6}px monospace`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(
+            player.nextPiece.symbol,
+            col * cellSize + 10 + cellSize/2,
+            row * cellSize + 10 + cellSize/2
+          );
+          ctx.fillStyle = player.nextPiece.color;
+        }
+      }
+    }
+    
+    nextDiv.innerHTML = '';
+    nextDiv.appendChild(canvas);
+  }
+}
+
+function movePiece(playerNum, dx, dy) {
+  if (!gameRunning) return;
+  
+  const player = players[playerNum];
+  if (!player.tetromino || player.clearingLines || player.gameOver) return;
+
+  const newRow = player.tetromino.row + dy;
+  const newCol = player.tetromino.col + dx;
+
+  if (isValidMove(player, player.tetromino.matrix, newRow, newCol)) {
+    player.tetromino.row = newRow;
+    player.tetromino.col = newCol;
+  } else if (dy > 0) {
+    placeTetromino(playerNum);
+  }
+}
+
+function rotatePiece(playerNum) {
+  if (!gameRunning) return;
+  
+  const player = players[playerNum];
+  if (!player.tetromino || player.clearingLines || player.gameOver) return;
+
+  const pieceData = mathPieces[player.tetromino.name];
+  const nextRotation = (player.tetromino.rotation + 1) % pieceData.rotations.length;
+  const rotatedMatrix = pieceData.rotations[nextRotation];
+
+  if (isValidMove(player, rotatedMatrix, player.tetromino.row, player.tetromino.col)) {
+    player.tetromino.matrix = rotatedMatrix;
+    player.tetromino.rotation = nextRotation;
+  }
+}
+
+function instantDrop(playerNum) {
+  if (!gameRunning) return;
+  
+  const player = players[playerNum];
+  if (!player.tetromino || player.clearingLines || player.gameOver) return;
+
+  // Find the lowest position
+  let finalRow = player.tetromino.row;
+  while (isValidMove(player, player.tetromino.matrix, finalRow + 1, player.tetromino.col)) {
+    finalRow++;
+  }
+  
+  // Move piece to final position
+  player.tetromino.row = finalRow;
+  
+  // Place it immediately
+  placeTetromino(playerNum);
+}
+
+function gameLoop(playerNum) {
+  const player = players[playerNum];
+  
+  if (!gameRunning || player.gameOver) {
+    cancelAnimationFrame(player.rAF);
+    return;
+  }
+
+  player.rAF = requestAnimationFrame(() => gameLoop(playerNum));
+  player.context.clearRect(0, 0, player.canvas.width, player.canvas.height);
+
+  const grid = 32;
+
+  // Draw playfield - FIXED: Only draw non-null cells
+  for (let row = 0; row < 20; row++) {
+    for (let col = 0; col < 10; col++) {
+      if (player.playfield[row][col] !== null) {
+        const pieceName = player.playfield[row][col];
+        const pieceData = mathPieces[pieceName];
+        
+        player.context.fillStyle = pieceData.color;
+        player.context.fillRect(col * grid, row * grid, grid - 1, grid - 1);
+        
+        // Draw symbol
+        player.context.fillStyle = 'white';
+        player.context.font = '20px monospace';
+        player.context.textAlign = 'center';
+        player.context.textBaseline = 'middle';
+        player.context.fillText(
+          pieceData.symbol,
+          col * grid + grid/2,
+          row * grid + grid/2
+        );
+      }
+    }
+  }
+
+  // Draw active tetromino
+  if (player.tetromino && !player.clearingLines) {
+    // Auto drop
+    const dropSpeed = Math.max(5, 35 - (player.level * 3));
+    if (++player.count > dropSpeed) {
+      player.tetromino.row++;
+      player.count = 0;
+
+      if (!isValidMove(player, player.tetromino.matrix, player.tetromino.row, player.tetromino.col)) {
+        player.tetromino.row--;
+        placeTetromino(playerNum);
+      }
+    }
+
+    player.context.fillStyle = player.tetromino.color;
+
+    for (let row = 0; row < player.tetromino.matrix.length; row++) {
+      for (let col = 0; col < player.tetromino.matrix[row].length; col++) {
+        if (player.tetromino.matrix[row][col]) {
+          const x = (player.tetromino.col + col) * grid;
+          const y = (player.tetromino.row + row) * grid;
+          
+          player.context.fillRect(x, y, grid - 1, grid - 1);
+          
+          // Draw symbol
+          player.context.fillStyle = 'white';
+          player.context.font = '20px monospace';
+          player.context.textAlign = 'center';
+          player.context.textBaseline = 'middle';
+          player.context.fillText(
+            player.tetromino.symbol,
+            x + grid/2,
+            y + grid/2
+          );
+          player.context.fillStyle = player.tetromino.color;
+        }
+      }
+    }
+  }
+}
+
+// Controller handling
+function updateControllers() {
+  const gamepads = navigator.getGamepads();
+  controllers = [];
+  
+  for (let i = 0; i < gamepads.length; i++) {
+    if (gamepads[i]) {
+      controllers.push({
+        index: i,
+        gamepad: gamepads[i]
+      });
+    }
+  }
+  
+  document.getElementById('controller-count').textContent = `${controllers.length} connected`;
+  
+  const controllerList = document.getElementById('controller-list');
+  controllerList.innerHTML = '';
+  controllers.forEach((controller, i) => {
+    if (i < 2) {
+      const div = document.createElement('div');
+      div.textContent = `P${i+1}: Connected`;
+      div.style.fontSize = '10px';
+      controllerList.appendChild(div);
+      
+      // Update control display
+      document.getElementById(`controls${i+1}`).innerHTML = 
+        'Controller ' + (i+1) + '<br>D-Pad Move<br>A Rotate<br>B Drop';
+    }
+  });
+}
+
+function handleControllerInput() {
+  if (!gameRunning) return;
+  
+  controllers.forEach((controller, index) => {
+    const playerNum = index + 1;
+    if (gameMode === 'single' && playerNum > 1) return;
+    if (gameMode === 'vs' && playerNum > 2) return;
+    
+    const gamepad = controller.gamepad;
+    const controllerId = `p${playerNum}`;
+    const currentStates = buttonStates[controllerId] || {};
+
+    const leftPressed = gamepad.buttons[14]?.pressed || gamepad.axes[0] < -0.5;
+    const rightPressed = gamepad.buttons[15]?.pressed || gamepad.axes[0] > 0.5;
+    const downPressed = gamepad.buttons[13]?.pressed || gamepad.axes[1] > 0.5;
+    const rotatePressed = gamepad.buttons[0]?.pressed;
+    const dropPressed = gamepad.buttons[1]?.pressed;
+
+    if (leftPressed && !currentStates.left) {
+      movePiece(playerNum, -1, 0);
+    }
+    if (rightPressed && !currentStates.right) {
+      movePiece(playerNum, 1, 0);
+    }
+    if (downPressed && !currentStates.down) {
+      movePiece(playerNum, 0, 1);
+    }
+    if (rotatePressed && !currentStates.rotate) {
+      rotatePiece(playerNum);
+    }
+    if (dropPressed && !currentStates.drop) {
+      instantDrop(playerNum);
+    }
+
+    buttonStates[controllerId] = {
+      left: leftPressed,
+      right: rightPressed,
+      down: downPressed,
+      rotate: rotatePressed,
+      drop: dropPressed
+    };
+  });
+}
+
+// Keyboard controls
+document.addEventListener('keydown', function(e) {
+  if (!gameRunning && e.key.toLowerCase() !== 'r') return;
+  
+  switch(e.code) {
+    // Player 1 (always active)
+    case 'KeyA': movePiece(1, -1, 0); break;
+    case 'KeyD': movePiece(1, 1, 0); break;
+    case 'KeyS': movePiece(1, 0, 1); break;
+    case 'KeyW': rotatePiece(1); break;
+    case 'KeyQ': instantDrop(1); break;
+    
+    // Player 2 (only in VS mode)
+    case 'ArrowLeft': if (gameMode === 'vs') movePiece(2, -1, 0); break;
+    case 'ArrowRight': if (gameMode === 'vs') movePiece(2, 1, 0); break;
+    case 'ArrowDown': if (gameMode === 'vs') movePiece(2, 0, 1); break;
+    case 'ArrowUp': if (gameMode === 'vs') rotatePiece(2); break;
+    case 'Space': 
+      e.preventDefault();
+      if (gameMode === 'vs') instantDrop(2); 
+      break;
+    
+    case 'KeyR': if (!gameRunning) startGame(); break;
+  }
+});
+
+function startGame() {
+  gameRunning = true;
+  timeLeft = 120; // 2-minute timer for both modes
+  winner = null;
+  gameStartTime = Date.now();
+  gameTime = 0;
+  
+  document.getElementById('winner').style.display = 'none';
+  document.getElementById('gameOver').style.display = 'none';
+  document.getElementById('startBtn').textContent = 'RESTART';
+  
+  // Reset players
+  const playersToReset = gameMode === 'single' ? [1] : [1, 2];
+  
+  playersToReset.forEach(playerNum => {
+    const player = players[playerNum];
+    
+    // Reset playfield - FIXED: Proper reset
+    for (let row = -2; row < 20; row++) {
+      for (let col = 0; col < 10; col++) {
+        player.playfield[row][col] = null;
+      }
+    }
+    
+    player.score = 0;
+    player.lines = 0;
+    player.level = 1;
+    player.count = 0;
+    player.sequence = [];
+    player.combo = 0;
+    player.piBonus = 0;
+    player.lastClearTime = 0;
+    player.clearingLines = false;
+    player.gameOver = false; // FIXED: Reset game over state
+    
+    document.getElementById(`score${playerNum}`).textContent = '0';
+    document.getElementById(`lines${playerNum}`).textContent = '0';
+    document.getElementById(`level${playerNum}`).textContent = '1';
+    document.getElementById(`combo${playerNum}`).textContent = '0x';
+    document.getElementById(`piBonus${playerNum}`).textContent = '0';
+    document.getElementById(`comboBar${playerNum}`).style.width = '0%';
+    
+    // Spawn first pieces
+    player.nextPiece = getNextTetromino(player);
+    player.tetromino = getNextTetromino(player);
+    updateNextPieceDisplay(playerNum);
+    
+    // Start game loop
+    gameLoop(playerNum);
+  });
+  
+  // Start timer for VS mode
+  if (gameMode === 'vs') {
+    gameTimer = setInterval(() => {
+      timeLeft--;
+      document.getElementById('timer').textContent = timeLeft;
+      
+      if (timeLeft <= 0) {
+        endGame(); // Time's up - determine winner by score
+      }
+    }, 1000);
+  }
+}
+
+function endGame(winnerNum = null) {
+  gameRunning = false;
+  clearInterval(gameTimer);
+  
+  Object.keys(players).forEach(playerNum => {
+    cancelAnimationFrame(players[playerNum].rAF);
+  });
+  
+  if (gameMode === 'single') {
+    // Show game over screen for singleplayer
+    const gameOverDiv = document.getElementById('gameOver');
+    document.getElementById('finalScore').textContent = `Final Score: ${players[1].score.toLocaleString()}`;
+    
+    const minutes = Math.floor(gameTime / 60);
+    const seconds = gameTime % 60;
+    document.getElementById('finalStats').innerHTML = 
+      `Lines Cleared: ${players[1].lines}<br>` +
+      `Level Reached: ${players[1].level}<br>` +
+      `π Bonus: ${players[1].piBonus.toLocaleString()}`;
+    
+    gameOverDiv.style.display = 'block';
+  } else {
+    // VS mode winner logic
+    if (winnerNum) {
+      winner = winnerNum;
+    } else {
+      // Time's up - determine winner by score
+      if (players[1].score > players[2].score) winner = 1;
+      else if (players[2].score > players[1].score) winner = 2;
+      else winner = 'tie';
+    }
+    
+    const winnerDiv = document.getElementById('winner');
+    if (winner === 'tie') {
+      winnerDiv.textContent = 'TIE GAME!';
+    } else {
+      winnerDiv.textContent = `PLAYER ${winner} WINS!`;
+    }
+    winnerDiv.style.display = 'block';
+  }
+  
+  document.getElementById('startBtn').textContent = 'PLAY AGAIN';
+}
+
+// Initialize controller detection
+window.addEventListener('gamepadconnected', updateControllers);
+window.addEventListener('gamepaddisconnected', updateControllers);
+
+setInterval(() => {
+  updateControllers();
+  handleControllerInput();
+  
+  // Update game time for singleplayer
+  if (gameRunning && gameMode === 'single') {
+    gameTime = Math.floor((Date.now() - gameStartTime) / 1000);
+  }
+}, 50);
+
+// Initial setup
+updateControllers();
+updateHighScoreDisplays();
+</script>
+</body>
+</html>

@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Space Integrators - Epic Mathematical War</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+  
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    background: linear-gradient(135deg, #0a0a23 0%, #1a1a3a 100%);
+    font-family: 'Orbitron', monospace;
+    color: #00ff88;
+    overflow: hidden;
+    height: 100vh;
+  }
+  
+  .game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background: 
+      radial-gradient(circle at 20% 30%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(255, 0, 136, 0.1) 0%, transparent 50%),
+      linear-gradient(180deg, #000011 0%, #001122 100%);
+  }
+  
+  .stars {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      radial-gradient(2px 2px at 20px 30px, #fff, transparent),
+      radial-gradient(2px 2px at 40px 70px, #fff, transparent),
+      radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+      radial-gradient(1px 1px at 130px 80px, #fff, transparent),
+      radial-gradient(2px 2px at 160px 30px, #fff, transparent);
+    background-repeat: repeat;
+    background-size: 200px 100px;
+    animation: twinkle 4s infinite;
+  }
+  
+  @keyframes twinkle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  
+  .title {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    z-index: 100;
+  }
+  
+  .title h1 {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: #00ff88;
+    text-shadow: 0 0 20px #00ff88;
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+  }
+  
+  .title .subtitle {
+    font-size: 1rem;
+    color: #88ffaa;
+    font-weight: 400;
+  }
+  
+  .game-area {
+    position: absolute;
+    top: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 600px;
+    border: 2px solid #00ff88;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+  }
+  
+  .player {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 40px;
+    background: linear-gradient(45deg, #00ff88, #44ffaa);
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+    box-shadow: 0 0 15px #00ff88;
+    transition: left 0.1s ease;
+  }
+  
+  .player-shield {
+    box-shadow: 0 0 25px #00ffff !important;
+    background: linear-gradient(45deg, #00ffff, #44aaff) !important;
+  }
+  
+  .integral {
+    position: absolute;
+    width: 50px;
+    height: 40px;
+    font-size: 20px;
+    color: #ff4444;
+    text-shadow: 0 0 10px #ff4444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    animation: float 2s ease-in-out infinite;
+  }
+  
+  .boss-integral {
+    width: 80px !important;
+    height: 60px !important;
+    font-size: 32px !important;
+    color: #ff0066 !important;
+    text-shadow: 0 0 20px #ff0066 !important;
+    border: 2px solid #ff0066;
+    border-radius: 10px;
+    background: rgba(255, 0, 102, 0.2);
+  }
+  
+  .mega-boss {
+    width: 120px !important;
+    height: 80px !important;
+    font-size: 40px !important;
+    color: #ff0000 !important;
+    text-shadow: 0 0 30px #ff0000 !important;
+    border: 3px solid #ff0000;
+    animation: megaBoss 1s ease-in-out infinite !important;
+  }
+  
+  @keyframes megaBoss {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.1) rotate(5deg); }
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  .derivative-shot {
+    position: absolute;
+    width: 4px;
+    height: 15px;
+    background: linear-gradient(180deg, #00ff88, #ffffff);
+    border-radius: 2px;
+    box-shadow: 0 0 8px #00ff88;
+  }
+  
+  .power-shot {
+    width: 8px !important;
+    height: 25px !important;
+    background: linear-gradient(180deg, #ffff00, #ff8800) !important;
+    box-shadow: 0 0 15px #ffff00 !important;
+  }
+  
+  .laser-shot {
+    width: 12px !important;
+    height: 35px !important;
+    background: linear-gradient(180deg, #ff00ff, #8800ff) !important;
+    box-shadow: 0 0 20px #ff00ff !important;
+  }
+  
+  .explosion {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffff00, #ff4444, transparent);
+    animation: explode 0.5s ease-out forwards;
+    pointer-events: none;
+  }
+  
+  @keyframes explode {
+    0% {
+      transform: scale(0);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
+  
+  .hud {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    justify-content: space-between;
+    color: #00ff88;
+    font-weight: bold;
+    z-index: 10;
+    font-size: 0.9rem;
+  }
+  
+  .progress-bar {
+    position: absolute;
+    top: 40px;
+    left: 10px;
+    right: 10px;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid #00ff88;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff4444, #ffff00, #00ff88);
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+  
+  .powerup {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    animation: pulse 1s infinite;
+  }
+  
+  .powerup-derivative {
+    background: radial-gradient(circle, #ffff00, #ff8800);
+    color: #000;
+  }
+  
+  .powerup-limit {
+    background: radial-gradient(circle, #00ffff, #0088ff);
+    color: #000;
+  }
+  
+  .powerup-laser {
+    background: radial-gradient(circle, #ff00ff, #8800ff);
+    color: #fff;
+  }
+  
+  .powerup-shield {
+    background: radial-gradient(circle, #00ff00, #008800);
+    color: #000;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+  }
+  
+  .controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    color: #88ffaa;
+    font-size: 0.9rem;
+  }
+  
+  .story-intro {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    padding: 30px;
+    border-radius: 15px;
+    border: 2px solid #00ff88;
+    color: #00ff88;
+    text-align: center;
+    max-width: 600px;
+    z-index: 1000;
+  }
+  
+  .story-intro h2 {
+    color: #ff4444;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+  }
+  
+  .story-intro p {
+    margin-bottom: 15px;
+    line-height: 1.6;
+  }
+  
+  .start-button {
+    background: linear-gradient(45deg, #00ff88, #44ffaa);
+    color: #000;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 25px;
+    font-family: 'Orbitron', monospace;
+    font-weight: bold;
+    font-size: 1.1rem;
+    cursor: pointer;
+    margin-top: 20px;
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+    transition: all 0.3s ease;
+  }
+  
+  .start-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(0, 255, 136, 0.8);
+  }
+  
+  .game-over {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.95);
+    padding: 40px;
+    border-radius: 15px;
+    border: 2px solid #ff4444;
+    color: #ff4444;
+    text-align: center;
+    z-index: 1000;
+    display: none;
+  }
+  
+  .victory {
+    border-color: #00ff88;
+    color: #00ff88;
+  }
+  
+  .integral-types {
+    font-size: 0.8rem;
+    color: #88ffaa;
+    margin-top: 10px;
+  }
+  
+  .wave-announcement {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px 40px;
+    border-radius: 10px;
+    border: 2px solid #ffff00;
+    color: #ffff00;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    z-index: 500;
+    display: none;
+    animation: fadeInOut 2s ease-in-out;
+  }
+  
+  .boss-announcement {
+    border-color: #ff0066 !important;
+    color: #ff0066 !important;
+    font-size: 2rem !important;
+    animation: bossAnnounce 3s ease-in-out !important;
+  }
+  
+  @keyframes fadeInOut {
+    0%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+  
+  @keyframes bossAnnounce {
+    0%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    20%, 80% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+  
+  .combo-display {
+    position: absolute;
+    top: 70px;
+    right: 10px;
+    color: #ffff00;
+    font-weight: bold;
+    font-size: 1.2rem;
+    text-shadow: 0 0 10px #ffff00;
+  }
+  
+  .shield-indicator {
+    position: absolute;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #00ffff;
+    font-weight: bold;
+    text-shadow: 0 0 10px #00ffff;
+    display: none;
+  }
+  
+  .debug-info {
+    position: absolute;
+    top: 100px;
+    left: 10px;
+    color: #888;
+    font-size: 0.8rem;
+    z-index: 20;
+  }
+</style>
+</head>
+<body>
+<div class="game-container">
+  <div class="stars"></div>
+  
+  <div class="title">
+    <h1>SPACE INTEGRATORS</h1>
+    <div class="subtitle">Epic Mathematical War</div>
+  </div>
+  
+  <div class="story-intro" id="storyIntro">
+    <h2>🚨 MATHEMATICAL CRISIS ALERT! 🚨</h2>
+    <p><strong>The year is 2157...</strong></p>
+    <p>Rogue <span style="color: #ff4444;">INTEGRALS</span> have escaped from the Mathematical Dimension and are invading our reality! These chaotic functions are trying to accumulate infinite area and destabilize the fabric of space-time!</p>
+    <p>You are <strong>Commander Derivative</strong>, the last hope of the Mathematical Defense Force. Your mission: Use the power of <span style="color: #00ff88;">DIFFERENTIATION</span> to neutralize these integrals before they reach critical mass!</p>
+    <p class="integral-types">
+      <strong>Enemy Types:</strong><br>
+      ∫ - Basic Linear (1 hit, 10 pts)<br>
+      ∫² - Quadratic (2 hits, 20 pts)<br>
+      ∫ᵉ - Exponential (3 hits, 30 pts)<br>
+      ∫ₛᵢₙ - Trigonometric (2 hits, 25 pts)<br>
+      ∫ₗₙ - Logarithmic (4 hits, 40 pts)<br>
+      ∫∫∫ - Triple Boss (5 hits, 100 pts)<br>
+      ∫∞ - Mega Boss (10 hits, 500 pts)
+    </p>
+    <p class="integral-types">
+      <strong>Power-ups:</strong><br>
+      d/dx - Power Shots | lim - Extra Life<br>
+      ∂ - Laser Mode | ∮ - Shield
+    </p>
+    <button class="start-button" onclick="startGame()">DEPLOY DERIVATIVES!</button>
+  </div>
+  
+  <div class="game-area" id="gameArea" style="display: none;">
+    <div class="hud">
+      <div>SCORE: <span id="score">0</span></div>
+      <div>WAVE: <span id="wave">1</span>/30</div>
+      <div>LIVES: <span id="lives">5</span></div>
+      <div>POWER: <span id="power">NORMAL</span></div>
+      <div>COMBO: <span id="combo">0</span>x</div>
+    </div>
+    
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    
+    <div class="debug-info" id="debugInfo">
+      Destroyed: <span id="debugDestroyed">0</span> / Total: <span id="debugTotal">0</span>
+    </div>
+    
+    <div class="combo-display" id="comboDisplay" style="display: none;">
+      COMBO: <span id="comboCount">0</span>x
+    </div>
+    
+    <div class="shield-indicator" id="shieldIndicator">
+      SHIELD ACTIVE
+    </div>
+    
+    <div class="player" id="player"></div>
+  </div>
+  
+  <div class="wave-announcement" id="waveAnnouncement">
+    <div id="waveText">WAVE 2 INCOMING!</div>
+  </div>
+  
+  <div class="game-over" id="gameOver">
+    <h2 id="gameOverTitle">MATHEMATICAL CHAOS!</h2>
+    <p id="gameOverText">The integrals have overwhelmed reality!</p>
+    <p>Final Score: <span id="finalScore">0</span></p>
+    <p>Waves Survived: <span id="finalWave">0</span></p>
+    <p>Max Combo: <span id="maxCombo">0</span>x</p>
+    <button class="start-button" onclick="restartGame()">TRY AGAIN</button>
+  </div>
+  
+  <div class="controls">
+    <div>← → Arrow Keys: Move | SPACEBAR: Fire Derivatives | ESC: Pause</div>
+  </div>
+</div>
+
+<script>
+  class SpaceIntegrators {
+    constructor() {
+      this.gameArea = document.getElementById('gameArea');
+      this.player = document.getElementById('player');
+      this.scoreElement = document.getElementById('score');
+      this.waveElement = document.getElementById('wave');
+      this.livesElement = document.getElementById('lives');
+      this.powerElement = document.getElementById('power');
+      this.comboElement = document.getElementById('combo');
+      this.progressFill = document.getElementById('progressFill');
+      this.comboDisplay = document.getElementById('comboDisplay');
+      this.shieldIndicator = document.getElementById('shieldIndicator');
+      this.debugInfo = document.getElementById('debugInfo');
+      
+      this.playerPos = 370;
+      this.score = 0;
+      this.wave = 1;
+      this.lives = 5;
+      this.gameRunning = false;
+      this.integrals = [];
+      this.shots = [];
+      this.powerups = [];
+      this.keys = {};
+      
+      this.powerMode = 'NORMAL';
+      this.powerTimer = 0;
+      this.shootCooldown = 0;
+      this.waveProgress = 0;
+      this.totalIntegralsInWave = 0;
+      this.integralsDestroyed = 0;
+      this.waveComplete = false;
+      
+      // Combo system
+      this.combo = 0;
+      this.comboTimer = 0;
+      this.maxCombo = 0;
+      
+      // Shield system
+      this.shieldActive = false;
+      this.shieldTimer = 0;
+      
+      // Enhanced integral types with more variety
+      this.integralTypes = [
+        { symbol: '∫', health: 1, points: 10, color: '#ff4444', speed: 1 },
+        { symbol: '∫²', health: 2, points: 20, color: '#ff6644', speed: 0.8 },
+        { symbol: '∫ᵉ', health: 3, points: 30, color: '#ff8844', speed: 1.2 },
+        { symbol: '∫ₛᵢₙ', health: 2, points: 25, color: '#ffaa44', speed: 1.1 },
+        { symbol: '∫ₗₙ', health: 4, points: 40, color: '#ffcc44', speed: 0.7 },
+        { symbol: '∫∫∫', health: 5, points: 100, color: '#ff0066', boss: true, speed: 0.6 },
+        { symbol: '∫∞', health: 10, points: 500, color: '#ff0000', megaBoss: true, speed: 0.4 }
+      ];
+      
+      this.bindEvents();
+    }
+    
+    bindEvents() {
+      document.addEventListener('keydown', (e) => {
+        this.keys[e.code] = true;
+        if (e.code === 'Space') {
+          e.preventDefault();
+          this.shoot();
+        }
+      });
+      
+      document.addEventListener('keyup', (e) => {
+        this.keys[e.code] = false;
+      });
+    }
+    
+    start() {
+      this.gameRunning = true;
+      this.spawnIntegrals();
+      this.gameLoop();
+    }
+    
+    gameLoop() {
+      if (!this.gameRunning) return;
+      
+      this.updatePlayer();
+      this.updateShots();
+      this.updateIntegrals();
+      this.updatePowerups();
+      this.checkCollisions();
+      this.checkPowerupCollisions();
+      this.checkWaveComplete();
+      this.updatePowerMode();
+      this.updateShield();
+      this.updateCombo();
+      this.updateProgress();
+      this.updateDebugInfo();
+      
+      if (this.shootCooldown > 0) this.shootCooldown--;
+      
+      requestAnimationFrame(() => this.gameLoop());
+    }
+    
+    updatePlayer() {
+      const moveSpeed = this.shieldActive ? 4 : 6;
+      
+      if (this.keys['ArrowLeft'] && this.playerPos > 0) {
+        this.playerPos -= moveSpeed;
+      }
+      if (this.keys['ArrowRight'] && this.playerPos < 740) {
+        this.playerPos += moveSpeed;
+      }
+      this.player.style.left = this.playerPos + 'px';
+      
+      if (this.shieldActive) {
+        this.player.classList.add('player-shield');
+      } else {
+        this.player.classList.remove('player-shield');
+      }
+    }
+    
+    shoot() {
+      if (this.shootCooldown > 0) return;
+      
+      const shot = document.createElement('div');
+      shot.className = 'derivative-shot';
+      
+      let damage = 1;
+      let cooldown = 5;
+      
+      if (this.powerMode === 'POWER') {
+        shot.className += ' power-shot';
+        damage = 2;
+        cooldown = 3;
+      } else if (this.powerMode === 'LASER') {
+        shot.className += ' laser-shot';
+        damage = 3;
+        cooldown = 4;
+      }
+      
+      this.shootCooldown = cooldown;
+      
+      shot.style.left = (this.playerPos + 28) + 'px';
+      shot.style.top = '540px';
+      this.gameArea.appendChild(shot);
+      
+      this.shots.push({
+        element: shot,
+        x: this.playerPos + 28,
+        y: 540,
+        power: damage
+      });
+    }
+    
+    updateShots() {
+      for (let i = this.shots.length - 1; i >= 0; i--) {
+        const shot = this.shots[i];
+        const speed = this.powerMode === 'LASER' ? 18 : 12;
+        shot.y -= speed;
+        shot.element.style.top = shot.y + 'px';
+        
+        if (shot.y < -20) {
+          shot.element.remove();
+          this.shots.splice(i, 1);
+        }
+      }
+    }
+    
+    spawnIntegrals() {
+      // Reset wave state
+      this.waveComplete = false;
+      this.integralsDestroyed = 0;
+      
+      // Epic 30-wave progression!
+      if (this.wave % 10 === 0) {
+        this.spawnMegaBossWave();
+        return;
+      } else if (this.wave % 5 === 0) {
+        this.spawnBossWave();
+        return;
+      }
+      
+      // FIXED: Count enemies as we spawn them
+      this.totalIntegralsInWave = 0; // Reset counter
+      
+      // Proper scaling: starts at 16, grows to ~70 by wave 30
+      const baseEnemies = 15;
+      const enemyGrowth = Math.floor(this.wave * 1.8);
+      const targetEnemies = Math.min(baseEnemies + enemyGrowth, 75);
+      
+      // Dynamic grid sizing
+      const cols = Math.min(10, Math.ceil(Math.sqrt(targetEnemies * 1.2)));
+      const rows = Math.ceil(targetEnemies / cols);
+      
+      let enemyCount = 0;
+      for (let row = 0; row < rows && enemyCount < targetEnemies; row++) {
+        for (let col = 0; col < cols && enemyCount < targetEnemies; col++) {
+          // Progressive enemy type introduction
+          let typeIndex = 0;
+          const rand = Math.random();
+          
+          if (this.wave >= 3) {
+            if (rand < 0.6) typeIndex = 0;
+            else typeIndex = 1;
+          }
+          if (this.wave >= 6) {
+            if (rand < 0.4) typeIndex = 0;
+            else if (rand < 0.7) typeIndex = 1;
+            else typeIndex = 2;
+          }
+          if (this.wave >= 10) {
+            if (rand < 0.3) typeIndex = 0;
+            else if (rand < 0.5) typeIndex = 1;
+            else if (rand < 0.7) typeIndex = 2;
+            else typeIndex = 3;
+          }
+          if (this.wave >= 15) {
+            if (rand < 0.2) typeIndex = 0;
+            else if (rand < 0.4) typeIndex = 1;
+            else if (rand < 0.6) typeIndex = 2;
+            else if (rand < 0.8) typeIndex = 3;
+            else typeIndex = 4;
+          }
+          
+          const integralType = this.integralTypes[typeIndex];
+          const x = col * (800 / cols) + 30;
+          const y = row * 45 + 80;
+          
+          const integral = this.createIntegral(integralType, x, y);
+          this.integrals.push(integral);
+          this.totalIntegralsInWave++; // FIXED: Count as we spawn
+          enemyCount++;
+        }
+      }
+      
+      this.announceWave();
+    }
+    
+    spawnBossWave() {
+      this.waveComplete = false;
+      this.integralsDestroyed = 0;
+      this.totalIntegralsInWave = 0; // FIXED: Reset and count properly
+      
+      // Spawn 3 boss integrals
+      for (let i = 0; i < 3; i++) {
+        const bossType = this.integralTypes[5]; // Triple integral boss
+        const integral = this.createIntegral(bossType, 150 + i * 250, 120);
+        integral.element.classList.add('boss-integral');
+        this.integrals.push(integral);
+        this.totalIntegralsInWave++; // FIXED: Count bosses
+      }
+      
+      // Add support enemies
+      const supportCount = Math.min(12, 6 + this.wave);
+      for (let i = 0; i < supportCount; i++) {
+        const typeIndex = Math.min(3, Math.floor(Math.random() * 3));
+        const integralType = this.integralTypes[typeIndex];
+        const integral = this.createIntegral(integralType, (i % 8) * 90 + 50, 220 + Math.floor(i / 8) * 50);
+        this.integrals.push(integral);
+        this.totalIntegralsInWave++; // FIXED: Count support enemies
+      }
+      
+      this.announceWave('🔥 BOSS WAVE! 🔥', true);
+    }
+    
+    spawnMegaBossWave() {
+      this.waveComplete = false;
+      this.integralsDestroyed = 0;
+      this.totalIntegralsInWave = 0; // FIXED: Reset and count properly
+      
+      // Spawn the mega boss
+      const megaBossType = this.integralTypes[6];
+      const integral = this.createIntegral(megaBossType, 340, 150);
+      integral.element.classList.add('mega-boss');
+      this.integrals.push(integral);
+      this.totalIntegralsInWave++; // FIXED: Count mega boss
+      
+      // Add elite support
+      for (let i = 0; i < 8; i++) {
+        const typeIndex = Math.min(4, 2 + Math.floor(Math.random() * 3));
+        const integralType = this.integralTypes[typeIndex];
+        const angle = (i / 8) * Math.PI * 2;
+        const x = 400 + Math.cos(angle) * 200;
+        const y = 250 + Math.sin(angle) * 100;
+        const integral = this.createIntegral(integralType, x, y);
+        this.integrals.push(integral);
+        this.totalIntegralsInWave++; // FIXED: Count support enemies
+      }
+      
+      this.announceWave('💀 MEGA BOSS WAVE! 💀', true);
+    }
+    
+    createIntegral(type, x, y) {
+      const integral = document.createElement('div');
+      integral.className = 'integral';
+      
+      integral.textContent = type.symbol;
+      integral.style.color = type.color;
+      integral.style.textShadow = `0 0 10px ${type.color}`;
+      integral.style.left = x + 'px';
+      integral.style.top = y + 'px';
+      
+      this.gameArea.appendChild(integral);
+      
+      return {
+        element: integral,
+        x: x,
+        y: y,
+        type: type.symbol,
+        maxHealth: type.health,
+        health: type.health,
+        points: type.points,
+        color: type.color,
+        boss: type.boss || false,
+        megaBoss: type.megaBoss || false,
+        baseSpeed: type.speed
+      };
+    }
+    
+    updateIntegrals() {
+      const time = Date.now() * 0.001;
+      const waveSpeed = 0.3 + (this.wave * 0.04);
+      
+      for (let i = this.integrals.length - 1; i >= 0; i--) {
+        const integral = this.integrals[i];
+        const speed = waveSpeed * integral.baseSpeed;
+        integral.y += speed;
+        
+        // Enhanced movement patterns
+        if (integral.megaBoss) {
+          integral.x += Math.sin(time * 0.5 + i) * 2;
+          integral.y += Math.cos(time * 0.3) * 0.5;
+        } else if (integral.boss) {
+          integral.x += Math.sin(time + i) * 1.5;
+        } else {
+          integral.x += Math.sin(time * 2 + i * 0.5) * 0.8;
+        }
+        
+        integral.x = Math.max(0, Math.min(750, integral.x));
+        
+        integral.element.style.left = integral.x + 'px';
+        integral.element.style.top = integral.y + 'px';
+        
+        // Health-based visual feedback
+        if (integral.health < integral.maxHealth) {
+          const opacity = 0.4 + (integral.health / integral.maxHealth) * 0.6;
+          integral.element.style.opacity = opacity;
+        }
+        
+        // Check if integral reached bottom
+        if (integral.y > 550) {
+          if (!this.shieldActive) {
+            this.lives--;
+            this.updateHUD();
+          }
+          integral.element.remove();
+          this.integrals.splice(i, 1);
+          
+          if (this.lives <= 0) {
+            this.gameOver(false);
+          }
+        }
+      }
+    }
+    
+    updatePowerups() {
+      for (let i = this.powerups.length - 1; i >= 0; i--) {
+        const powerup = this.powerups[i];
+        powerup.y += 3;
+        powerup.element.style.top = powerup.y + 'px';
+        
+        if (powerup.y > 600) {
+          powerup.element.remove();
+          this.powerups.splice(i, 1);
+        }
+      }
+    }
+    
+    checkCollisions() {
+      for (let shotIndex = this.shots.length - 1; shotIndex >= 0; shotIndex--) {
+        const shot = this.shots[shotIndex];
+        
+        for (let integralIndex = this.integrals.length - 1; integralIndex >= 0; integralIndex--) {
+          const integral = this.integrals[integralIndex];
+          const dx = shot.x - (integral.x + 25);
+          const dy = shot.y - (integral.y + 20);
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          const hitRadius = integral.megaBoss ? 50 : (integral.boss ? 40 : 35);
+          
+          if (distance < hitRadius) {
+            integral.health -= shot.power;
+            
+            this.createExplosion(integral.x + 25, integral.y + 20);
+            
+            shot.element.remove();
+            this.shots.splice(shotIndex, 1);
+            
+            if (integral.health <= 0) {
+              // Track destroyed integrals
+              this.integralsDestroyed++;
+              
+              // Combo system
+              this.combo++;
+              this.comboTimer = 180; // 3 seconds
+              this.maxCombo = Math.max(this.maxCombo, this.combo);
+              
+              // Score with combo multiplier
+              const basePoints = integral.points;
+              const comboMultiplier = Math.min(1 + (this.combo * 0.1), 3); // Max 3x multiplier
+              const finalPoints = Math.floor(basePoints * comboMultiplier);
+              
+              this.score += finalPoints;
+              
+              // Higher powerup drop rates for bosses
+              let dropChance = 0.12; // Base 12%
+              if (integral.boss) dropChance = 0.4; // 40% for bosses
+              if (integral.megaBoss) dropChance = 0.8; // 80% for mega bosses
+              
+              if (Math.random() < dropChance) {
+                this.spawnPowerup(integral.x, integral.y);
+              }
+              
+              integral.element.remove();
+              this.integrals.splice(integralIndex, 1);
+            }
+            
+            this.updateHUD();
+            break;
+          }
+        }
+      }
+    }
+    
+    checkPowerupCollisions() {
+      for (let i = this.powerups.length - 1; i >= 0; i--) {
+        const powerup = this.powerups[i];
+        const dx = this.playerPos + 30 - (powerup.x + 15);
+        const dy = 560 - (powerup.y + 15);
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 40) {
+          if (powerup.type === 'derivative') {
+            this.powerMode = 'POWER';
+            this.powerTimer = 420; // 7 seconds
+          } else if (powerup.type === 'limit') {
+            this.lives = Math.min(this.lives + 1, 10);
+          } else if (powerup.type === 'laser') {
+            this.powerMode = 'LASER';
+            this.powerTimer = 360; // 6 seconds
+          } else if (powerup.type === 'shield') {
+            this.shieldActive = true;
+            this.shieldTimer = 600; // 10 seconds
+          }
+          
+          powerup.element.remove();
+          this.powerups.splice(i, 1);
+          this.updateHUD();
+        }
+      }
+    }
+    
+    spawnPowerup(x, y) {
+      const powerup = document.createElement('div');
+      powerup.className = 'powerup';
+      
+      const rand = Math.random();
+      let type;
+      
+      if (rand < 0.4) {
+        type = 'derivative';
+        powerup.className += ' powerup-derivative';
+        powerup.textContent = "d/dx";
+      } else if (rand < 0.65) {
+        type = 'limit';
+        powerup.className += ' powerup-limit';
+        powerup.textContent = "lim";
+      } else if (rand < 0.85) {
+        type = 'laser';
+        powerup.className += ' powerup-laser';
+        powerup.textContent = "∂";
+      } else {
+        type = 'shield';
+        powerup.className += ' powerup-shield';
+        powerup.textContent = "∮";
+      }
+      
+      powerup.style.left = x + 'px';
+      powerup.style.top = y + 'px';
+      
+      this.gameArea.appendChild(powerup);
+      this.powerups.push({
+        element: powerup,
+        x: x,
+        y: y,
+        type: type
+      });
+    }
+    
+    updatePowerMode() {
+      if (this.powerTimer > 0) {
+        this.powerTimer--;
+        if (this.powerTimer === 0) {
+          this.powerMode = 'NORMAL';
+          this.updateHUD();
+        }
+      }
+    }
+    
+    updateShield() {
+      if (this.shieldTimer > 0) {
+        this.shieldTimer--;
+        this.shieldIndicator.style.display = 'block';
+        if (this.shieldTimer === 0) {
+          this.shieldActive = false;
+          this.shieldIndicator.style.display = 'none';
+        }
+      }
+    }
+    
+    updateCombo() {
+      if (this.comboTimer > 0) {
+        this.comboTimer--;
+        if (this.combo >= 3) {
+          this.comboDisplay.style.display = 'block';
+          document.getElementById('comboCount').textContent = this.combo;
+        }
+        if (this.comboTimer === 0) {
+          this.combo = 0;
+          this.comboDisplay.style.display = 'none';
+        }
+      }
+    }
+    
+    updateProgress() {
+      const progress = (this.integralsDestroyed / this.totalIntegralsInWave) * 100;
+      this.progressFill.style.width = progress + '%';
+    }
+    
+    updateDebugInfo() {
+      document.getElementById('debugDestroyed').textContent = this.integralsDestroyed;
+      document.getElementById('debugTotal').textContent = this.totalIntegralsInWave;
+    }
+    
+    createExplosion(x, y) {
+      const explosion = document.createElement('div');
+      explosion.className = 'explosion';
+      explosion.style.left = (x - 30) + 'px';
+      explosion.style.top = (y - 30) + 'px';
+      this.gameArea.appendChild(explosion);
+      
+      setTimeout(() => {
+        explosion.remove();
+      }, 500);
+    }
+    
+    checkWaveComplete() {
+      // Only check for wave completion if we haven't already completed it
+      if (!this.waveComplete && this.integralsDestroyed >= this.totalIntegralsInWave) {
+        this.waveComplete = true;
+        this.wave++;
+        this.updateHUD();
+        
+        if (this.wave > 30) {
+          this.gameOver(true);
+        } else {
+          setTimeout(() => {
+            this.spawnIntegrals();
+          }, 1500);
+        }
+      }
+    }
+    
+    announceWave(customText = null, isBoss = false) {
+      const announcement = document.getElementById('waveAnnouncement');
+      const waveText = document.getElementById('waveText');
+      
+      if (customText) {
+        waveText.textContent = customText;
+      } else {
+        waveText.textContent = `WAVE ${this.wave}`;
+      }
+      
+      if (isBoss) {
+        announcement.className = 'wave-announcement boss-announcement';
+      } else {
+        announcement.className = 'wave-announcement';
+      }
+      
+      announcement.style.display = 'block';
+      setTimeout(() => {
+        announcement.style.display = 'none';
+      }, isBoss ? 3000 : 2000);
+    }
+    
+    updateHUD() {
+      this.scoreElement.textContent = this.score.toLocaleString();
+      this.waveElement.textContent = this.wave;
+      this.livesElement.textContent = this.lives;
+      this.comboElement.textContent = this.combo;
+      
+      let powerText = this.powerMode;
+      if (this.powerTimer > 0) {
+        powerText += ` (${Math.ceil(this.powerTimer / 60)}s)`;
+      }
+      this.powerElement.textContent = powerText;
+      
+      // Color coding for power modes
+      if (this.powerMode === 'POWER') {
+        this.powerElement.style.color = '#ffff00';
+      } else if (this.powerMode === 'LASER') {
+        this.powerElement.style.color = '#ff00ff';
+      } else {
+        this.powerElement.style.color = '#00ff88';
+      }
+    }
+    
+    gameOver(victory) {
+      this.gameRunning = false;
+      const gameOverDiv = document.getElementById('gameOver');
+      const title = document.getElementById('gameOverTitle');
+      const text = document.getElementById('gameOverText');
+      const finalScore = document.getElementById('finalScore');
+      const finalWave = document.getElementById('finalWave');
+      const maxCombo = document.getElementById('maxCombo');
+      
+      if (victory) {
+        gameOverDiv.className = 'game-over victory';
+        title.textContent = '🏆 MATHEMATICAL MASTERY! 🏆';
+        text.textContent = 'You have achieved the ultimate mathematical victory and saved reality from infinite chaos!';
+      } else {
+        gameOverDiv.className = 'game-over';
+        title.textContent = '💀 MATHEMATICAL CHAOS! 💀';
+        text.textContent = 'The integrals have overwhelmed reality!';
+      }
+      
+      finalScore.textContent = this.score.toLocaleString();
+      finalWave.textContent = this.wave - 1;
+      maxCombo.textContent = this.maxCombo;
+      gameOverDiv.style.display = 'block';
+    }
+    
+    reset() {
+      this.integrals.forEach(integral => integral.element.remove());
+      this.shots.forEach(shot => shot.element.remove());
+      this.powerups.forEach(powerup => powerup.element.remove());
+      
+      this.integrals = [];
+      this.shots = [];
+      this.powerups = [];
+      this.playerPos = 370;
+      this.score = 0;
+      this.wave = 1;
+      this.lives = 5;
+      this.powerMode = 'NORMAL';
+      this.powerTimer = 0;
+      this.shootCooldown = 0;
+      this.waveProgress = 0;
+      this.totalIntegralsInWave = 0;
+      this.integralsDestroyed = 0;
+      this.waveComplete = false;
+      this.combo = 0;
+      this.comboTimer = 0;
+      this.maxCombo = 0;
+      this.shieldActive = false;
+      this.shieldTimer = 0;
+      
+      this.player.style.left = this.playerPos + 'px';
+      this.player.classList.remove('player-shield');
+      this.progressFill.style.width = '0%';
+      this.comboDisplay.style.display = 'none';
+      this.shieldIndicator.style.display = 'none';
+      this.updateHUD();
+    }
+  }
+  
+  let game;
+  
+  function startGame() {
+    document.getElementById('storyIntro').style.display = 'none';
+    document.getElementById('gameArea').style.display = 'block';
+    
+    game = new SpaceIntegrators();
+    game.start();
+  }
+  
+  function restartGame() {
+    document.getElementById('gameOver').style.display = 'none';
+    game.reset();
+    game.start();
+  }
+</script>
+</body>
+</html>
