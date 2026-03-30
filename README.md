@@ -39,4 +39,4 @@ For problems or questions: ho0.si1125@gmail.com
 
 ---
 
-*This game was made for KISJ Mu Alpha Theta's Fall Festival booth. Thank you!*
+*This game was made for KISJ Mu Alpha Theta's Fall Festival booth in 2025. Thank you!*
